@@ -1,7 +1,6 @@
 #load "../UrlIngest/models.csx"
 #r "Microsoft.WindowsAzure.Storage"
 #r "System.Runtime.Serialization"
-#r "Newtonsoft.Json"
 
 using Microsoft.WindowsAzure.Storage.Table;
 using Microsoft.ApplicationInsights;
@@ -9,7 +8,6 @@ using System.Net;
 using System;
 using System.Linq;
 using System.Web;
-using  Newtonsoft.Json;
 
 using System.Runtime.Serialization;
 
