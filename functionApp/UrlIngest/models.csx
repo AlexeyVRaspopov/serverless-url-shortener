@@ -9,6 +9,7 @@ public class ShortUrl : TableEntity
 {
     public string Url { get; set; }
     public string Medium { get; set; }
+    public string Id { get; set; }
 }
 
 public class Request 
