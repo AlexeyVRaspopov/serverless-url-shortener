@@ -22,12 +22,14 @@ public static string Encode(int i)
                             i = i / Base;
             }
 
+
             return string.Join(string.Empty, s.Reverse());
 }
 
-public static string[] UTM_MEDIUMS=new [] {"twitter", "facebook", "linkedin", "googleplus"};
+public static string[] UTM_MEDIUMS=new [] {"Sharepoint"};
 
-public static async Task<HttpResponseMessage> Run(HttpRequestMessage req, NextId keyTable, CloudTable tableOut, TraceWriter log)
+
+public static async Task<HttpResponseMessage> Run(HttpRequestMessage req, NextId keyTable, CloudTable tableOut, IAsyncCollector<object> outputDocument, TraceWriter log)
 {
     log.Info($"C# manually triggered function called with req: {req}");
 
@@ -63,8 +65,6 @@ public static async Task<HttpResponseMessage> Run(HttpRequestMessage req, NextId
             RowKey = "KEY",
             Id = 1024
         };
-        var keyAdd = TableOperation.Insert(keyTable);
-        await tableOut.ExecuteAsync(keyAdd); 
     }
     
     log.Info($"Current key: {keyTable.Id}"); 
@@ -78,7 +78,7 @@ public static async Task<HttpResponseMessage> Run(HttpRequestMessage req, NextId
     {
         foreach(var medium in UTM_MEDIUMS)
         {
-            var mediumUrl = $"{url}&utm_medium={medium}";
+            var mediumUrl = $"{url}?utm_medium={medium}";
             var shortUrl = Encode(keyTable.Id++);
             log.Info($"Short URL for {mediumUrl} is {shortUrl}");
             var newUrl = new ShortUrl 
@@ -88,8 +88,8 @@ public static async Task<HttpResponseMessage> Run(HttpRequestMessage req, NextId
                 Medium = medium,
                 Url = mediumUrl
             };
-            var multiAdd = TableOperation.Insert(newUrl);
-            await tableOut.ExecuteAsync(multiAdd); 
+            //add to CosmosDB
+            await outputDocument.AddAsync(newUrl);
             result.Add(new Result 
             { 
                 ShortUrl = $"{SHORTENER_URL}{newUrl.RowKey}",
@@ -107,18 +107,15 @@ public static async Task<HttpResponseMessage> Run(HttpRequestMessage req, NextId
             RowKey = $"{shortUrl}",
             Url = url
         };
-        var singleAdd = TableOperation.Insert(newUrl);
-        await tableOut.ExecuteAsync(singleAdd);
+        //add to CosmosDB
+        await outputDocument.AddAsync(newUrl);
         result.Add(new Result 
         {
             ShortUrl = $"{SHORTENER_URL}{newUrl.RowKey}",
             LongUrl = WebUtility.UrlDecode(newUrl.Url)
         }); 
     }
-
-    var operation = TableOperation.Replace(keyTable);
-    await tableOut.ExecuteAsync(operation);
-
+    
     log.Info($"Done.");
     return req.CreateResponse(HttpStatusCode.OK, result);
     
